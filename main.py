@@ -1,4 +1,5 @@
 # Импортируем необходимые модули
+import PyQt6
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QFileDialog, QGraphicsView, QGraphicsScene, \
     QGraphicsPixmapItem, QGraphicsEllipseItem
 from PyQt6.QtGui import QPixmap, QPen, QBrush, QColor
@@ -142,13 +143,15 @@ class MapWindow(QWidget):
                                               QBrush(QColor("green")))
                 # Иначе игнорируем клик
                 else:
-                    self.points_path.append(point)
-                    self.map_scene.addEllipse(self.points_path[len(self.points_path) - 1].x() - 5,
-                                              self.points_path[len(self.points_path) - 1].y() - 5,
-                                              10, 10, QPen(QColor("purple")),
+                    self.points_path.append([point.x(), point.y()])
+                    self.map_scene.addEllipse(self.points_path[-1][0] - 5, self.points_path[-1][1] - 5, 10, 10, QPen(QColor("red")),
                                               QBrush(QColor("purple")))
+                    QBrush(QColor("purple"))
+                    print(self.points_path[-1][0])
 
-    # Определяем метод для сброса карты и переменных
+                    # Определяем метод для сброса карты и переменных
+
+
     def reset_map(self):
         # Удаляем точки пути из графической сцены
         if self.from_xy:
@@ -162,6 +165,7 @@ class MapWindow(QWidget):
         # Очищаем метку с информацией о пути
         self.info_label.setText("")
 
+
     # Определяем метод для расчета расстояния между двумя точками
 
     def distance(self, p1, p2):
@@ -173,6 +177,7 @@ class MapWindow(QWidget):
         # Возвращаем расстояние по формуле
         return math.sqrt(dx ** 2 + dy ** 2)
 
+
     # Определяем метод для сброса карты и точек пути
     def reset_map(self):
         # Очищаем графическую сцену
@@ -181,6 +186,9 @@ class MapWindow(QWidget):
         self.from_xy = None
         self.to_xy = None
 
+
+a = PyQt6.QtCore.QPointF(225.0, 145.0)
+print(int(a.x()))
 
 app = QApplication(sys.argv)
 window = MapWindow()
