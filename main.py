@@ -1,4 +1,6 @@
 # Импортируем необходимые модули
+import math
+
 import PyQt6
 from PyQt6.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QFileDialog, QGraphicsView, QGraphicsScene, \
     QGraphicsPixmapItem, QGraphicsEllipseItem
@@ -58,6 +60,9 @@ class MapWindow(QWidget):
         self.vehicle = None
         self.points_path = []
 
+        self.min_dist_list = []  # Список минимальных точек
+        self.min_dist = 0  # Минимальное расстояние
+
     # Определяем метод для импорта карты из файла
     def import_map(self):
         # Открываем диалоговое окно для выбора файла
@@ -72,18 +77,38 @@ class MapWindow(QWidget):
             self.to_xy = None
             self.info_label.clear()
 
-    # Определяем метод для поиска кратчайшего пути на карте
+    # Определяем метод find_path(self)
     def find_path(self):
-        # Проверяем, что карта загружена и точки пути выбраны
         if self.map_pixmap and self.from_xy and self.to_xy:
-            # Здесь должен быть алгоритм поиска кратчайшего пути в графе, который построен на основании поиска точек перегиба дорог на карте
-            # Для простоты примера мы просто соединяем начальную и конечную точки прямой линией
-            # Добавляем линию на сцену с красным цветом и толщиной 3 пикселя
-            self.map_scene.addLine(self.from_xy.x(), self.from_xy.y(), self.to_xy.x(), self.to_xy.y(),
-                                   QPen(QColor("red"), 3))
-            # Выводим информацию о пути на метку
+            # Создаем пустой список для хранения возможных путей
+            paths = []
+            # Перебираем все точки из списка points
+            for point in self.points_path:
+                # Вычисляем расстояние от начальной точки до текущей точки
+                dist_from = math.sqrt((point[0] - self.from_xy[0]) ** 2 + (point[1] - self.from_xy[1]) ** 2)
+                # Вычисляем расстояние от текущей точки до конечной точки
+                dist_to = math.sqrt((point[0] - self.to_xy[0]) ** 2 + (point[1] - self.to_xy[1]) ** 2)
+                # Суммируем оба расстояния
+                dist_total = dist_from + dist_to
+                # Добавляем в список paths кортеж из расстояния и точки
+                paths.append((dist_total, point))
+            # Сортируем список paths по возрастанию расстояния
+            paths.sort()
+            # Берем первый элемент из списка paths, который содержит минимальное расстояние и точку
+            self.min_dist, min_point = paths[0]
+            # Создаем пустой список для хранения результата
+            self.min_dist_list = []
+            # Добавляем в результат начальную точку
+            self.min_dist_list.append(self.from_xy)
+            # Добавляем в результат точку с минимальным расстоянием
+            self.min_dist_list.append(min_point)
+            # Добавляем в результат конечную точку
+            self.min_dist_list.append(self.to_xy)
+            # Возвращаем результат и минимальное расстояние
+
             self.info_label.setText(
-                f"Кратчайший путь:\nНачальная точка: ({self.from_xy.x()}, {self.from_xy.y()})\nКонечная точка: ({self.to_xy.x()}, {self.to_xy.y()})\nДлина пути: {self.distance(self.from_xy, self.to_xy):.2f} пикселей")
+                f"Кратчайший путь:\nНачальная точка: ({self.from_xy[0]}, {self.from_xy[1]})\nКонечная точка: ({self.to_xy[0]}, {self.to_xy[0]})\nДлина пути: {self.min_dist} пикселей")
+            return self.min_dist
         else:
             # Если карта не загружена или точки пути не выбраны, выводим сообщение об ошибке
             self.info_label.setText("Ошибка: Необходимо загрузить карту и выбрать точки пути")
@@ -130,27 +155,27 @@ class MapWindow(QWidget):
                 # Проверяем, что это первая точка пути
                 if not self.from_xy:
                     # Сохраняем точку в переменную self.from_xy
-                    self.from_xy = point
+                    self.from_xy = [point.x(), point.x()]
                     # Добавляем эллипс на сцену с красным цветом и радиусом 5 пикселей
-                    self.map_scene.addEllipse(self.from_xy.x() - 5, self.from_xy.y() - 5, 10, 10, QPen(QColor("red")),
+                    self.map_scene.addEllipse(point.x() - 5, point.y() - 5, 10, 10, QPen(QColor("red")),
                                               QBrush(QColor("red")))
                 # Проверяем, что это вторая точка пути
                 elif not self.to_xy:
                     # Сохраняем точку в переменную self.to_xy
-                    self.to_xy = point
+                    self.to_xy = [point.x(), point.x()]
                     # Добавляем эллипс на сцену с красным цветом и радиусом 5 пикселей
-                    self.map_scene.addEllipse(self.to_xy.x() - 5, self.to_xy.y() - 5, 10, 10, QPen(QColor("red")),
+                    self.map_scene.addEllipse(point.x() - 5, point.y() - 5, 10, 10, QPen(QColor("red")),
                                               QBrush(QColor("green")))
                 # Иначе игнорируем клик
                 else:
                     self.points_path.append([point.x(), point.y()])
-                    self.map_scene.addEllipse(self.points_path[-1][0] - 5, self.points_path[-1][1] - 5, 10, 10, QPen(QColor("red")),
+                    self.map_scene.addEllipse(self.points_path[-1][0] - 5, self.points_path[-1][1] - 5, 10, 10,
+                                              QPen(QColor("red")),
                                               QBrush(QColor("purple")))
                     QBrush(QColor("purple"))
-                    print(self.points_path[-1][0])
+                    print(self.points_path)
 
                     # Определяем метод для сброса карты и переменных
-
 
     def reset_map(self):
         # Удаляем точки пути из графической сцены
@@ -165,7 +190,6 @@ class MapWindow(QWidget):
         # Очищаем метку с информацией о пути
         self.info_label.setText("")
 
-
     # Определяем метод для расчета расстояния между двумя точками
 
     def distance(self, p1, p2):
@@ -177,7 +201,6 @@ class MapWindow(QWidget):
         # Возвращаем расстояние по формуле
         return math.sqrt(dx ** 2 + dy ** 2)
 
-
     # Определяем метод для сброса карты и точек пути
     def reset_map(self):
         # Очищаем графическую сцену
@@ -186,9 +209,6 @@ class MapWindow(QWidget):
         self.from_xy = None
         self.to_xy = None
 
-
-a = PyQt6.QtCore.QPointF(225.0, 145.0)
-print(int(a.x()))
 
 app = QApplication(sys.argv)
 window = MapWindow()
